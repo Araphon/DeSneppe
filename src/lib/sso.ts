@@ -14,6 +14,8 @@ function cfg(p: Provider): Cfg | null {
   if (p === 'google' && e.GOOGLE_CLIENT_ID && e.GOOGLE_CLIENT_SECRET) return {
     naam: 'Google', authUrl: 'https://accounts.google.com/o/oauth2/v2/auth', tokenUrl: 'https://oauth2.googleapis.com/token',
     jwks: 'https://www.googleapis.com/oauth2/v3/certs', issuer: iss => iss === 'https://accounts.google.com' || iss === 'accounts.google.com', scope: 'openid email profile', clientId: e.GOOGLE_CLIENT_ID,
+    // form_post: de serverfirewall blokkeert Google's terugkeer-URL (onversleutelde https:// in 'scope')
+    formPost: true,
   }
   if (p === 'microsoft' && e.MICROSOFT_CLIENT_ID && e.MICROSOFT_CLIENT_SECRET) return {
     naam: 'Microsoft', authUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize', tokenUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',

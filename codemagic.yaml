@@ -67,5 +67,7 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
-        submit_to_testflight: true
+        # Interne TestFlight-testers krijgen elke build zonder review. Externe beta-review pas
+        # aanzetten als de testinformatie in App Store Connect ingevuld is.
+        submit_to_testflight: false
         submit_to_app_store: false

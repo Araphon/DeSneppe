@@ -1,0 +1,75 @@
+# De Sneppe — native apps (Capacitor). De app laadt de live website; deze builds verpakken enkel de schil.
+# Builds worden manueel gestart in Codemagic (geen automatische triggers).
+workflows:
+  android-desneppe:
+    name: De Sneppe Android
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      java: 21
+      node: 22
+      android_signing:
+        - desneppe_upload   # referentienaam van de upload-keystore in Codemagic
+    scripts:
+      - name: Installeren
+        script: npm ci
+      - name: Capacitor sync
+        script: npx cap sync android
+      - name: Ondertekening + versienummer
+        script: |
+          cat > android/keystore.properties <<PROPS
+          storeFile=$CM_KEYSTORE_PATH
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          keyPassword=$CM_KEY_PASSWORD
+          PROPS
+          VC=$(( $(date +%s) / 60 ))
+          sed -i '' -e "s/versionCode [0-9]*/versionCode $VC/" android/app/build.gradle
+      - name: AAB bouwen
+        script: cd android && ./gradlew bundleRelease
+    artifacts:
+      - android/app/build/outputs/bundle/release/*.aab
+
+  ios-desneppe:
+    name: De Sneppe iOS
+    instance_type: mac_mini_m2
+    max_build_duration: 45
+    integrations:
+      app_store_connect: Codemagic   # zelfde API-sleutel als de Beehive-apps (team J267FQ474X)
+    environment:
+      groups:
+        - Signing                    # CERTIFICATE_PRIVATE_KEY (gedeeld met de Beehive-apps)
+      xcode: latest
+      node: 22
+      vars:
+        BUNDLE_ID: "be.desneppe.app"
+    scripts:
+      - name: Installeren
+        script: npm ci
+      - name: Capacitor sync
+        script: npx cap sync ios
+      - name: Buildnummer
+        script: |
+          cd ios/App
+          NEW_BUILD=$(($(date +%s) / 60))
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*/CURRENT_PROJECT_VERSION = $NEW_BUILD/g" App.xcodeproj/project.pbxproj
+      - name: Keychain
+        script: keychain initialize
+      - name: Signing-bestanden (met push-rechten)
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+      - name: Certificaten
+        script: keychain add-certificates
+      - name: Profielen
+        script: xcode-project use-profiles --project ios/App/App.xcodeproj
+      - name: IPA bouwen
+        script: |
+          xcode-project build-ipa --project ios/App/App.xcodeproj --scheme App
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false

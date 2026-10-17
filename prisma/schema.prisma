@@ -1,0 +1,474 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Beheer ──────────────────────────────────────────────
+
+model AdminGebruiker {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  naam         String
+  wachtwoord   String?
+  actief       Boolean   @default(true)
+  uitnodigToken String?  @unique
+  uitnodigTot  DateTime?
+  laatsteLogin DateTime?
+  aangemaaktOp DateTime  @default(now())
+}
+
+model Instelling {
+  sleutel String @id
+  waarde  Json
+}
+
+// Bewerkbare teksten van de website (simpel CMS)
+model Inhoud {
+  sleutel    String   @id
+  waarde     String
+  bijgewerkt DateTime @updatedAt
+}
+
+// ─── Catalogus ───────────────────────────────────────────
+
+model Categorie {
+  id           String    @id @default(cuid())
+  naam         String
+  slug         String    @unique
+  omschrijving String?
+  volgorde     Int       @default(0)
+  zichtbaar    Boolean   @default(true)
+  producten    Product[]
+}
+
+model Label {
+  id         String         @id @default(cuid())
+  naam       String         @unique
+  afbeelding String?
+  kleur      String         @default("#16a34a")
+  volgorde   Int            @default(0)
+  producten  ProductLabel[]
+}
+
+model Product {
+  id                  String              @id @default(cuid())
+  naam                String
+  slug                String              @unique
+  omschrijving        String?
+  afbeelding          String?
+  prijsExcl           Decimal             @db.Decimal(10, 4)
+  btwPct              Decimal             @default(6) @db.Decimal(5, 2)
+  categorieId         String
+  categorie           Categorie           @relation(fields: [categorieId], references: [id])
+  volgorde            Int                 @default(0)
+  zichtbaar           Boolean             @default(true)
+  // Uitverkocht: manueel (tot terug aangezet) of tot een tijdstip
+  uitverkocht         Boolean             @default(false)
+  uitverkochtTot      DateTime?
+  aanpassingenActief  Boolean             @default(false)
+  aanpassingenTitel   String              @default("Aanpassingen")
+  allergenenActief    Boolean             @default(false)
+  allergenen          String?
+  loyaltyActief       Boolean             @default(false)
+  loyaltyPunten       Int                 @default(0)
+  stickerPrinten      Boolean             @default(false)
+  maxPerBestelling    Int?
+  leeftijdsgrens      Int?               // 16 (bier/wijn) of 18 (sterke drank)
+  // Beschikbaarheid (op het AFHAALmoment): dagen 1=ma…7=zo (leeg = elke dag), uren "HH:MM", seizoen "MM-DD" (jaarlijks)
+  beschikbaarDagen    Int[]
+  beschikbaarVan      String?
+  beschikbaarTot      String?
+  seizoenVan          String?
+  seizoenTot          String?
+  extern              String?             @unique
+  aanpassingen        ProductAanpassing[]
+  opties              ProductOptie[]
+  labels              ProductLabel[]
+  allergenenLijst     ProductAllergeen[]
+  aangemaaktOp        DateTime            @default(now())
+  bijgewerktOp        DateTime            @updatedAt
+}
+
+model ProductLabel {
+  productId String
+  labelId   String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  label     Label   @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([productId, labelId])
+}
+
+// Aanpassing = vinkje ("Zonder augurk", "Met ei +€0,30"). Prijs incl. btw, in cent.
+model ProductAanpassing {
+  id         String  @id @default(cuid())
+  productId  String
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  naam       String
+  prijsCent  Int     @default(0)
+  volgorde   Int     @default(0)
+  actief     Boolean @default(true)
+}
+
+// Optie = keuzevraag met radio-knoppen ("Welk broodje?" → wit/bruin/meergranen)
+model ProductOptie {
+  id                String              @id @default(cuid())
+  productId         String
+  product           Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  naam              String
+  verplicht         Boolean             @default(true)
+  wijzigtAllergenen Boolean             @default(false)
+  volgorde          Int                 @default(0)
+  keuzes            ProductOptieKeuze[]
+}
+
+model ProductOptieKeuze {
+  id         String       @id @default(cuid())
+  optieId    String
+  optie      ProductOptie @relation(fields: [optieId], references: [id], onDelete: Cascade)
+  naam       String
+  prijsCent  Int          @default(0)
+  allergenen String?
+  standaard  Boolean      @default(false)
+  volgorde   Int          @default(0)
+  actief     Boolean      @default(true)
+  allergenenLijst KeuzeAllergeen[]
+}
+
+// ─── Openingsuren ────────────────────────────────────────
+
+enum OpeningsType {
+  OPEN
+  GESLOTEN
+}
+
+enum Herhaling {
+  GEEN
+  DAGELIJKS
+  WEKELIJKS
+  MAANDELIJKS
+  JAARLIJKS
+}
+
+model OpeningsRegel {
+  id           String       @id @default(cuid())
+  type         OpeningsType
+  titel        String?
+  startDatum   DateTime     @db.Date
+  eindDatum    DateTime?    @db.Date
+  // "HH:MM"; leeg bij GESLOTEN = hele dag gesloten
+  startTijd    String?
+  eindTijd     String?
+  herhaling    Herhaling    @default(GEEN)
+  interval     Int          @default(1)
+  weekdagen    Int[]
+  herhalingTot DateTime?    @db.Date
+  aangemaaktOp DateTime     @default(now())
+}
+
+// ─── Klanten ─────────────────────────────────────────────
+
+model Klant {
+  id               String               @id @default(cuid())
+  email            String               @unique
+  wachtwoord       String?
+  voornaam         String
+  naam             String
+  adres            String
+  postcode         String
+  gemeente         String
+  geboortedatum    DateTime?            @db.Date
+  telefoon         String
+  googleId         String?              @unique
+  appleId          String?              @unique
+  microsoftId      String?              @unique
+  punten           Int                  @default(0)
+  // Misbruik / no-shows
+  noShows          Int                  @default(0)
+  alleenOnline     Boolean              @default(false) // manueel: enkel nog online betalen
+  geblokkeerd      Boolean              @default(false) // manueel: mag niet meer bestellen
+  registratieIp    String?
+  mailBestelling   Boolean              @default(true)
+  pushBestelling   Boolean              @default(true)
+  mailNieuws       Boolean              @default(false)
+  mailActies       Boolean              @default(false)
+  resetToken       String?              @unique
+  resetTokenTot    DateTime?
+  aangemaaktOp     DateTime             @default(now())
+  laatsteLogin     DateTime?
+  bestellingen     Bestelling[]
+  transacties      LoyaltyTransactie[]
+  vouchers         Voucher[]
+  pushAbonnementen PushAbonnement[]
+  voorkeuren       KlantVoorkeur[]
+  verzendingen     Verzending[]
+}
+
+model PushAbonnement {
+  id           String   @id @default(cuid())
+  klantId      String
+  klant        Klant    @relation(fields: [klantId], references: [id], onDelete: Cascade)
+  endpoint     String   @unique
+  data         Json
+  aangemaaktOp DateTime @default(now())
+}
+
+// ─── Bestellingen ────────────────────────────────────────
+
+enum BetaalStatus {
+  NVT
+  OPEN
+  BETAALD
+  MISLUKT
+  TERUGBETAALD
+}
+
+enum BestelStatus {
+  ONTVANGEN
+  BEZIG
+  KLAAR
+  AFGEHAALD
+  NIET_AFGEHAALD
+  GEANNULEERD
+}
+
+model Bestelling {
+  id            String            @id @default(cuid())
+  nummer        Int
+  dag           DateTime          @db.Date
+  klantId       String?
+  klant         Klant?            @relation(fields: [klantId], references: [id], onDelete: SetNull)
+  klantNaam     String
+  klantEmail    String?
+  klantTelefoon String?
+  afhaalTijd    DateTime
+  slotMinuten   Int               @default(15) // lengte van het afhaalslot bij het bestellen
+  status        BestelStatus      @default(ONTVANGEN)
+  totaalCent    Int
+  btwCent       Int               @default(0)
+  opmerking     String?
+  betaalwijze   String            @default("AAN_KASSA") // AAN_KASSA | ONLINE
+  betaalStatus  BetaalStatus      @default(NVT)
+  molliePaymentId String?         @unique
+  transactiekostCent Int          @default(0)
+  kostLabel     String?           // naam van de kost op het moment van bestellen (bv. Servicekost)
+  betaaldOp     DateTime?
+  puntenVerdiend Int              @default(0)
+  geprintOp     DateTime?
+  statusGewijzigdOp DateTime      @default(now())
+  aangemaaktOp  DateTime          @default(now())
+  regels        BestellingRegel[]
+
+  @@unique([dag, nummer])
+  @@index([afhaalTijd])
+  @@index([status])
+}
+
+model BestellingRegel {
+  id             String     @id @default(cuid())
+  bestellingId   String
+  bestelling     Bestelling @relation(fields: [bestellingId], references: [id], onDelete: Cascade)
+  productId      String?
+  productNaam    String
+  aantal         Int
+  eenheidCent    Int
+  totaalCent     Int
+  btwPct         Decimal    @db.Decimal(5, 2)
+  // [{optie, keuze, prijsCent}]
+  keuzes         Json       @default("[]")
+  // [{naam, prijsCent}]
+  aanpassingen   Json       @default("[]")
+  stickerPrinten Boolean    @default(false)
+  punten         Int        @default(0)
+  leeftijdsgrens Int?
+}
+
+// ─── Loyalty ─────────────────────────────────────────────
+
+model LoyaltyBeloning {
+  id           String    @id @default(cuid())
+  naam         String
+  omschrijving String?
+  punten       Int
+  afbeelding   String?
+  actief       Boolean   @default(true)
+  volgorde     Int       @default(0)
+  vouchers     Voucher[]
+}
+
+model LoyaltyTransactie {
+  id           String   @id @default(cuid())
+  klantId      String
+  klant        Klant    @relation(fields: [klantId], references: [id], onDelete: Cascade)
+  punten       Int
+  reden        String
+  bestellingId String?
+  voucherId    String?
+  aangemaaktOp DateTime @default(now())
+}
+
+enum VoucherStatus {
+  OPEN
+  INGEWISSELD
+  GEANNULEERD
+}
+
+model Voucher {
+  id            String          @id @default(cuid())
+  code          String          @unique
+  klantId       String
+  klant         Klant           @relation(fields: [klantId], references: [id], onDelete: Cascade)
+  beloningId    String
+  beloning      LoyaltyBeloning @relation(fields: [beloningId], references: [id])
+  punten        Int
+  status        VoucherStatus   @default(OPEN)
+  aangemaaktOp  DateTime        @default(now())
+  ingewisseldOp DateTime?
+}
+
+// Afhaalmoment manueel dichtgezet (pauzeknop op de kassa)
+model SlotBlokkade {
+  id           String   @id @default(cuid())
+  datum        DateTime @db.Date
+  tijd         String   // "HH:MM" (lokaal)
+  aangemaaktOp DateTime @default(now())
+
+  @@unique([datum, tijd])
+}
+
+// ─── Allergenen ──────────────────────────────────────────
+
+enum AllergeenSoort {
+  BEVAT
+  SPOREN
+}
+
+model Allergeen {
+  id        String             @id @default(cuid())
+  naam      String             @unique
+  icoon     String?
+  wettelijk Boolean            @default(false) // één van de 14 EU-allergenen (niet verwijderbaar)
+  volgorde  Int                @default(0)
+  producten ProductAllergeen[]
+  keuzes    KeuzeAllergeen[]
+}
+
+model ProductAllergeen {
+  productId   String
+  allergeenId String
+  soort       AllergeenSoort @default(BEVAT)
+  product     Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  allergeen   Allergeen      @relation(fields: [allergeenId], references: [id], onDelete: Cascade)
+
+  @@id([productId, allergeenId])
+}
+
+model KeuzeAllergeen {
+  keuzeId     String
+  allergeenId String
+  soort       AllergeenSoort    @default(BEVAT)
+  keuze       ProductOptieKeuze @relation(fields: [keuzeId], references: [id], onDelete: Cascade)
+  allergeen   Allergeen         @relation(fields: [allergeenId], references: [id], onDelete: Cascade)
+
+  @@id([keuzeId, allergeenId])
+}
+
+// ─── Marketing: onderwerpen, klantgroepen, campagnes ────
+
+model MeldingOnderwerp {
+  id           String          @id @default(cuid())
+  sleutel      String          @unique
+  naam         String
+  omschrijving String?
+  systeem      Boolean         @default(false) // bv. bestelstatus: niet verwijderbaar
+  standaardAan Boolean         @default(false) // aan bij registratie als de klant marketing toestaat
+  volgorde     Int             @default(0)
+  actief       Boolean         @default(true)
+  voorkeuren   KlantVoorkeur[]
+  campagnes    Campagne[]
+}
+
+model KlantVoorkeur {
+  klantId     String
+  onderwerpId String
+  mail        Boolean          @default(false)
+  push        Boolean          @default(false)
+  klant       Klant            @relation(fields: [klantId], references: [id], onDelete: Cascade)
+  onderwerp   MeldingOnderwerp @relation(fields: [onderwerpId], references: [id], onDelete: Cascade)
+
+  @@id([klantId, onderwerpId])
+}
+
+model Klantgroep {
+  id           String     @id @default(cuid())
+  naam         String
+  omschrijving String?
+  filters      Json       @default("{}")
+  aangemaaktOp DateTime   @default(now())
+  campagnes    Campagne[]
+}
+
+enum CampagneType {
+  EENMALIG
+  AUTOMATISCH
+}
+
+enum CampagneStatus {
+  CONCEPT
+  GEPLAND
+  ACTIEF
+  GEPAUZEERD
+  VERZONDEN
+}
+
+model Campagne {
+  id             String           @id @default(cuid())
+  naam           String
+  type           CampagneType     @default(EENMALIG)
+  status         CampagneStatus   @default(CONCEPT)
+  onderwerpId    String
+  onderwerp      MeldingOnderwerp @relation(fields: [onderwerpId], references: [id])
+  klantgroepId   String?
+  klantgroep     Klantgroep?      @relation(fields: [klantgroepId], references: [id], onDelete: SetNull)
+  viaMail        Boolean          @default(true)
+  viaPush        Boolean          @default(false)
+  // inhoud
+  onderwerpRegel String
+  titel          String
+  tekst          String
+  knopTekst      String?
+  knopUrl        String?
+  afbeelding     String?
+  pushTekst      String?
+  cadeauBeloningId String?        // optioneel: voucher voor deze beloning meesturen
+  // planning (eenmalig): geplandOp; herhaling: GEEN | WEKELIJKS | MAANDELIJKS
+  geplandOp      DateTime?
+  herhaling      String           @default("GEEN")
+  // automatisch: { soort: VERJAARDAG | INACTIEF | NA_AFHALEN | NIEUWE_KLANT, dagen?, uren? }
+  trigger        Json?
+  minDagenTussen Int              @default(0) // zelfde klant niet vaker dan om de X dagen
+  systeemSleutel String?          @unique     // standaard-automatisaties (welkom, verjaardag, ...)
+  laatstVerzonden DateTime?
+  aangemaaktOp   DateTime         @default(now())
+  bijgewerktOp   DateTime         @updatedAt
+  verzendingen   Verzending[]
+}
+
+model Verzending {
+  id         String   @id @default(cuid())
+  campagneId String
+  campagne   Campagne @relation(fields: [campagneId], references: [id], onDelete: Cascade)
+  klantId    String?
+  klant      Klant?   @relation(fields: [klantId], references: [id], onDelete: SetNull)
+  kanaal     String   // MAIL | PUSH
+  status     String   // VERZONDEN | MISLUKT | NIET_VERZONDEN
+  reden      String?
+  sleutel    String?  // dedupe, bv. "2026" voor verjaardag of bestelling-id voor review
+  verzondenOp DateTime @default(now())
+
+  @@index([campagneId, klantId])
+  @@index([klantId, verzondenOp])
+}

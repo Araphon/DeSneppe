@@ -1,0 +1,25 @@
+node_modules
+.next
+.env
+uploads/
+_plesk/
+tmp/
+*.log
+.sneppe-build
+!.env.example
+tsconfig.tsbuildinfo
+
+# Geheimen en sleutels nooit in git
+*.p8
+*.keystore
+*.jks
+keystore.properties
+firebase-service-account*.json
+android/local.properties
+
+# Gegenereerde native bestanden
+android/app/build/
+android/build/
+android/.gradle/
+ios/App/App/public/
+ios/DerivedData/

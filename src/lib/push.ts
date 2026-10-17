@@ -53,7 +53,7 @@ async function stuurFcm(token: string, b: PushBericht): Promise<'ok' | 'ongeldig
   if (r.ok) return 'ok'
   const j = await r.json().catch(() => ({}))
   const code = j?.error?.details?.find((d: { errorCode?: string }) => d.errorCode)?.errorCode || j?.error?.status
-  if (r.status === 404 || code === 'UNREGISTERED' || code === 'INVALID_ARGUMENT') return 'ongeldig'
+  if (r.status === 404 || code === 'UNREGISTERED') return 'ongeldig'
   console.error('[push] fcm', r.status, code)
   return 'fout'
 }

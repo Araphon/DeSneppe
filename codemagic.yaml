@@ -37,8 +37,11 @@ workflows:
     integrations:
       app_store_connect: Codemagic   # zelfde API-sleutel als de Beehive-apps (team J267FQ474X)
     environment:
-      groups:
-        - Signing                    # CERTIFICATE_PRIVATE_KEY (gedeeld met de Beehive-apps)
+      ios_signing:                   # opgeslagen in Codemagic → Code signing identities
+        certificates:
+          - desneppe_distributie
+        provisioning_profiles:
+          - desneppe_appstore
       xcode: latest
       node: 22
       vars:
@@ -53,13 +56,6 @@ workflows:
           cd ios/App
           NEW_BUILD=$(($(date +%s) / 60))
           sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*/CURRENT_PROJECT_VERSION = $NEW_BUILD/g" App.xcodeproj/project.pbxproj
-      - name: Keychain
-        script: keychain initialize
-      - name: Signing-bestanden (met push-rechten)
-        script: |
-          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
-      - name: Certificaten
-        script: keychain add-certificates
       - name: Profielen
         script: xcode-project use-profiles --project ios/App/App.xcodeproj
       - name: IPA bouwen

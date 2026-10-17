@@ -9,7 +9,7 @@ workflows:
       java: 21
       node: 22
       android_signing:
-        - desneppe_upload   # referentienaam van de upload-keystore in Codemagic
+        - desneppe          # referentienaam van de upload-keystore in Codemagic
     scripts:
       - name: Installeren
         script: npm ci

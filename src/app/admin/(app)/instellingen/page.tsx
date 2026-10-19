@@ -145,7 +145,7 @@ export default function InstellingenPagina() {
             <label className="label" htmlFor="dsu">Doorsturen naar</label>
             <input id="dsu" type="url" className="input" placeholder="https://…" value={i.doorsturen.url} onChange={e => setI({ ...i, doorsturen: { ...i.doorsturen, url: e.target.value.trim() } })} />
             {i.doorsturen.actief && !/^https?:\/\/\S+$/.test(i.doorsturen.url) && <p className="text-sm text-red-700">Vul een volledig webadres in (begint met https://), anders wordt er niet doorgestuurd.</p>}
-            {i.doorsturen.actief && /^https?:\/\/\S+$/.test(i.doorsturen.url) && <p className="text-sm text-amber-800">Staat aan: de bestelpagina en het afrekenen op de website sturen door naar dit adres.</p>}
+            {i.doorsturen.actief && /^https?:\/\/\S+$/.test(i.doorsturen.url) && <p className="text-sm text-amber-800">Staat aan: klikken op ‘Bestel online’ openen dit adres in een nieuw tabblad (kan tot 1 minuut duren voor het overal actief is).</p>}
           </div>
         </Kaart>
 

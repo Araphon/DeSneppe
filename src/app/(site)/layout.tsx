@@ -3,6 +3,7 @@ import Footer from '@/components/Footer'
 import JsonLd from '@/components/JsonLd'
 import AppBrug from '@/components/app/AppBrug'
 import AppNav from '@/components/app/AppNav'
+import DoorstuurLinks from '@/components/DoorstuurLinks'
 import { businessJsonLd, getSiteData, statusTekst, weekTekst } from '@/lib/site'
 
 export const revalidate = 60
@@ -17,6 +18,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       <div className="niet-app"><Footer inst={s.inst} week={weekTekst(s.week)} /></div>
       <AppNav />
       <AppBrug />
+      <DoorstuurLinks url={s.inst.doorsturen.actief && /^https?:\/\/\S+$/.test(s.inst.doorsturen.url) ? s.inst.doorsturen.url : null} />
     </>
   )
 }

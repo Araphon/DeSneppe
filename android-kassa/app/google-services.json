@@ -1,0 +1,34 @@
+{
+  "project_info": {
+    "project_number": "926147152738",
+    "project_id": "de-sneppe",
+    "storage_bucket": "de-sneppe.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:926147152738:android:85f22e3932d5787aed7a3b",
+        "android_client_info": {
+          "package_name": "be.desneppe.kassa"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBY3XsL1r9T_nE27pBn0Dm_O69S-m-Jo4o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "926147152738-vptregm09mipf8p4m6gtuhes2gqatvlo.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

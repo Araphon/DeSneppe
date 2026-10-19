@@ -2,7 +2,7 @@ import { prisma } from './db'
 
 // Bewerkbare teksten. Sleutel → standaardwaarde. Luna kan deze aanpassen via Admin → Website.
 export const INHOUD_VELDEN: { sleutel: string; label: string; groep: string; standaard: string; lang?: boolean; fotos?: number }[] = [
-  { groep: 'Home', sleutel: 'home.fotos', label: 'Foto’s bovenaan de homepagina', standaard: '/media/site/luna-broodje-smeren.jpg,/media/site/feestbroodjes.jpg,/media/site/gevel.jpg,/media/site/pistolet-hesp-kaas.jpg', fotos: 4 },
+  { groep: 'Home', sleutel: 'home.fotos', label: 'Foto’s bovenaan de homepagina', standaard: '/media/site/luna-broodje-smeren-kader.jpg,/media/site/feestbroodjes.jpg,/media/site/gevel.jpg,/media/site/pistolet-hesp-kaas.jpg', fotos: 4 },
   { groep: 'Home', sleutel: 'home.titel', label: 'Grote titel', standaard: 'Verse broodjes in Meulebeke' },
   { groep: 'Home', sleutel: 'home.intro', label: 'Intro onder de titel', lang: true, standaard: 'Bij De Sneppe kan je terecht voor koude en warme broodjes, panini’s, wraps, pasta, verse soep en dagschotels. Elke dag vers belegd — bestel online en haal je lunch af zonder wachten.' },
   { groep: 'Home', sleutel: 'home.usp1.titel', label: 'Troef 1 – titel', standaard: 'Elke dag vers' },

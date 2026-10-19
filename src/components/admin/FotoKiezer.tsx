@@ -10,8 +10,10 @@ export default function FotoKiezer({ waarde, max, onChange }: { waarde: string; 
   const gekozen = waarde.split(',').map(x => x.trim()).filter(Boolean)
   const [open, setOpen] = useState(false)
   const [fotos, setFotos] = useState<{ src: string; naam: string }[]>([])
+  const [eigen, setEigen] = useState<{ src: string; naam: string }[]>([])
   useEffect(() => {
     if (!open || fotos.length) return
+    vraag<{ src: string; naam: string }[]>('/api/admin/media').then(setEigen).catch(() => {})
     vraag<{ afbeelding: string | null; naam: string }[]>('/api/admin/producten').then(l => {
       const gezien = new Set<string>()
       setFotos(l.filter(p => p.afbeelding && !gezien.has(p.afbeelding) && gezien.add(p.afbeelding)).map(p => ({ src: p.afbeelding!, naam: p.naam })))
@@ -42,6 +44,17 @@ export default function FotoKiezer({ waarde, max, onChange }: { waarde: string; 
         <Modal titel="Foto kiezen" onSluit={() => setOpen(false)} breed>
           <p className="mb-2 text-sm font-semibold">Eigen foto uploaden</p>
           <FotoUpload map="site" grootte={110} waarde={null} onChange={p => { if (p) { zet([...gekozen, p]); setOpen(false) } }} />
+          {eigen.length > 0 && <>
+            <p className="mb-2 mt-6 text-sm font-semibold">Eigen foto’s van de zaak</p>
+            <div className="grid max-h-[40vh] grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-5">
+              {eigen.map(f => (
+                <button key={f.src} type="button" title={f.naam} disabled={gekozen.includes(f.src)} onClick={() => { zet([...gekozen, f.src]); setOpen(false) }}
+                  className="relative aspect-square overflow-hidden rounded-md ring-1 ring-ink/10 hover:ring-2 hover:ring-ink disabled:opacity-30">
+                  <Image src={f.src} alt={f.naam} fill sizes="120px" className="object-cover" />
+                </button>
+              ))}
+            </div>
+          </>}
           <p className="mb-2 mt-6 text-sm font-semibold">Of kies een productfoto</p>
           <div className="grid max-h-[50vh] grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-5">
             {fotos.map(f => (

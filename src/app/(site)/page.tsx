@@ -28,6 +28,11 @@ export default async function Home() {
   const gekozen = fotoLijst(t['home.fotos'])
   const heroFotos = gekozen.length ? gekozen.map((src, i) => ({ id: `f${i}`, afbeelding: src, naam: 'De Sneppe' })) : uitgelicht
   const broodjes = menu.find(c => /belegde/i.test(c.naam))?.producten.filter(p => !p.uitverkocht).slice(0, 8) || []
+  const strook = fotoLijst(t['home.strook.fotos'])
+  const schotels = fotoLijst(t['home.schotels.fotos'])
+  const automaat = fotoLijst(t['home.automaat.fotos'])[0]
+  const b = s.inst.bedrijf
+  const alineas = (x: string) => x.split(/\n\s*\n/).map((a, i) => <p key={i} className="mt-3 text-ink/75 first:mt-0">{a}</p>)
   return (
     <>
       <JsonLd data={faqJsonLd(faq)} />
@@ -74,6 +79,20 @@ export default async function Home() {
         ))}
       </section>
 
+      {/* Fotostrook */}
+      {strook.length > 0 && (
+        <section className="mt-16">
+          <div className="container-x"><h2 className="h-display text-3xl">{t['home.strook.titel']}</h2></div>
+          <div className="container-x mt-6"><Carrousel label={t['home.strook.titel']}>
+            {strook.map((src, i) => (
+              <div key={src + i} className="relative h-72 w-56 shrink-0 snap-start overflow-hidden rounded-lg bg-sand sm:h-80 sm:w-64">
+                <Image src={src} alt={`${t['home.strook.titel']} – foto ${i + 1}`} fill sizes="256px" className="object-cover" />
+              </div>
+            ))}
+          </Carrousel></div>
+        </section>
+      )}
+
       {/* Categorieën */}
       <section className="container-x mt-16">
         <h2 className="h-display text-3xl">Wat mag het zijn?</h2>
@@ -105,6 +124,45 @@ export default async function Home() {
           </div>
           <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
             {broodjes.map(p => <Link key={p.id} href="/bestellen#cat-belegde-broodjes"><ProductTegel p={p} /></Link>)}
+          </div>
+        </section>
+      )}
+
+      {/* Schotels & feestbroodjes */}
+      {schotels.length > 0 && (
+        <section className="container-x mt-20 grid items-center gap-10 lg:grid-cols-2">
+          <div className="grid grid-cols-2 gap-3">
+            {schotels.slice(0, 3).map((src, i) => (
+              <div key={src + i} className={`relative overflow-hidden rounded-lg bg-sand ${i === 0 ? 'col-span-2 aspect-[16/10]' : 'aspect-square'}`}>
+                <Image src={src} alt={`${t['home.schotels.titel']} – foto ${i + 1}`} fill sizes="(max-width: 1024px) 90vw, 560px" className="object-cover" />
+              </div>
+            ))}
+          </div>
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wide text-brand-dark">Voor bedrijven & feestjes</p>
+            <h2 className="h-display mt-1 text-3xl sm:text-4xl">{t['home.schotels.titel']}</h2>
+            <div className="mt-4">{alineas(t['home.schotels.tekst'])}</div>
+            <div className="mt-6 flex flex-wrap gap-3">
+              {b.telefoon && <a href={`tel:${b.telefoon.replace(/[^+\d]/g, '')}`} className="btn-ink">Bel {b.telefoon}</a>}
+              {b.email && <a href={`mailto:${b.email}?subject=${encodeURIComponent('Schotels / feestbroodjes')}`} className="btn-ghost">Mail ons</a>}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Broodjesautomaat 24/7 */}
+      {automaat && (
+        <section className="container-x mt-20">
+          <div className="grid overflow-hidden rounded-xl bg-ink text-white md:grid-cols-[2fr_3fr]">
+            <div className="relative min-h-72 md:min-h-full">
+              <Image src={automaat} alt="Broodjesautomaat van De Sneppe in Meulebeke" fill sizes="(max-width: 768px) 100vw, 40vw" className="object-cover" />
+            </div>
+            <div className="p-8 sm:p-10">
+              <span className="inline-flex items-center gap-2 rounded-full bg-brand px-3 py-1 text-sm font-bold text-ink">24/7 open</span>
+              <h2 className="h-display mt-4 text-3xl sm:text-4xl">{t['home.automaat.titel']}</h2>
+              <div className="mt-4 [&_p]:text-white/75">{alineas(t['home.automaat.tekst'])}</div>
+              <p className="mt-6 text-sm text-white/60">{b.adres}, {b.postcode} {b.gemeente}</p>
+            </div>
           </div>
         </section>
       )}

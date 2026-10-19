@@ -104,13 +104,21 @@ export default function BestelBord({ kassa = false, printers, ontwerp }: { kassa
           for (const b of d) {
             if (b.status === 'ONTVANGEN' && !b.geprintOp && !printQueue.current.has(b.id)) {
               printQueue.current.add(b.id)
-              await print(b)
+              // Meerdere kassa's: enkel het toestel dat de bestelling claimt, print ze
+              const c = await vraag<{ geclaimd: boolean }>(`/api/admin/bestellingen/${b.id}/print-claim`, 'POST', {}).catch(() => ({ geclaimd: false }))
+              if (!c.geclaimd) continue
+              try { await printBestelling(b, printers, ontwerp!); toon(true, `Bestelling #${b.nummer} geprint`) }
+              catch (e) {
+                toon(false, (e as Error).message)
+                await vraag(`/api/admin/bestellingen/${b.id}/print-claim`, 'POST', { vrijgeven: true }).catch(() => {})
+                setTimeout(() => printQueue.current.delete(b.id), 60000) // na een minuut opnieuw proberen
+              }
             }
           }
         }
       }
     } catch (e) { toon(false, (e as Error).message) }
-  }, [datum, kassa, printers, print])
+  }, [datum, kassa, printers, ontwerp])
 
   useEffect(() => { gekend.current = null; laad(); const t = setInterval(laad, kassa ? 5000 : 10000); return () => clearInterval(t) }, [laad, kassa])
 

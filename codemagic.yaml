@@ -71,3 +71,75 @@ workflows:
         # aanzetten als de testinformatie in App Store Connect ingevuld is.
         submit_to_testflight: false
         submit_to_app_store: false
+
+  # ─── De Sneppe Kassa (winkelier-app) ───────────────────────────────────────
+  android-kassa:
+    name: De Sneppe Kassa Android
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      java: 21
+      node: 22
+      android_signing:
+        - desneppe          # zelfde upload-keystore als de klanten-app
+    scripts:
+      - name: Installeren
+        script: npm ci
+      - name: Kassa-config gebruiken
+        script: cp capacitor.kassa.config.ts capacitor.config.ts
+      - name: Capacitor sync
+        script: npx cap sync android
+      - name: Ondertekening + versienummer
+        script: |
+          cat > android-kassa/keystore.properties <<PROPS
+          storeFile=$CM_KEYSTORE_PATH
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          keyPassword=$CM_KEY_PASSWORD
+          PROPS
+          VC=$(( $(date +%s) / 60 ))
+          sed -i '' -e "s/versionCode [0-9]*/versionCode $VC/" android-kassa/app/build.gradle
+      - name: AAB + APK bouwen
+        script: cd android-kassa && ./gradlew bundleRelease assembleRelease
+    artifacts:
+      - android-kassa/app/build/outputs/bundle/release/*.aab
+      - android-kassa/app/build/outputs/apk/release/*.apk
+
+  ios-kassa:
+    name: De Sneppe Kassa iOS
+    instance_type: mac_mini_m2
+    max_build_duration: 45
+    integrations:
+      app_store_connect: Codemagic
+    environment:
+      ios_signing:
+        certificates:
+          - desneppe_distributie
+        provisioning_profiles:
+          - desneppe_kassa_appstore
+      xcode: latest
+      node: 22
+    scripts:
+      - name: Installeren
+        script: npm ci
+      - name: Kassa-config gebruiken
+        script: cp capacitor.kassa.config.ts capacitor.config.ts
+      - name: Capacitor sync
+        script: npx cap sync ios
+      - name: Buildnummer
+        script: |
+          cd ios-kassa/App
+          NEW_BUILD=$(($(date +%s) / 60))
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*/CURRENT_PROJECT_VERSION = $NEW_BUILD/g" App.xcodeproj/project.pbxproj
+      - name: Profielen
+        script: xcode-project use-profiles --project ios-kassa/App/App.xcodeproj
+      - name: IPA bouwen
+        script: xcode-project build-ipa --project ios-kassa/App/App.xcodeproj --scheme App
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: false
+        submit_to_app_store: false

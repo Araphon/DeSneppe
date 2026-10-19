@@ -8,6 +8,8 @@
 // (Admin → Ticket & sticker). Dezelfde regels voeden het live voorbeeld én de printer.
 
 import type { StickerOntwerp, TicketOntwerp } from '@/lib/instellingen'
+import { escposBytes, zplLabel } from './printTaal'
+import { stuurRuw } from './app/printer'
 
 export type PrintRegel = { productNaam: string; aantal: number; totaalCent?: number; leeftijdsgrens?: number | null; keuzes: { optie: string; keuze: string }[]; aanpassingen: { naam: string }[]; stickerPrinten: boolean }
 export type PrintBestelling = { nummer: number; klantNaam: string; klantTelefoon?: string | null; aangemaaktOp: string; afhaalTijd: string; slotMinuten?: number; totaalCent: number; opmerking: string | null; regels: PrintRegel[]; betaalStatus?: string; transactiekostCent?: number; kostLabel?: string | null }
@@ -89,12 +91,12 @@ export function stickerLijnen(s: Sticker, o: StickerOntwerp): Lijn[] {
   return l
 }
 
-// ─── Logo als 1-bit rasterbeeld (voor ePOS <image>) ─────────────────────────
-const logoCache = new Map<number, { b64: string; w: number; h: number }>()
-async function logoRaster(breedte: number) {
+// ─── Logo als 1-bit rasterbeeld (ePOS <image>, ESC/POS GS v 0, ZPL ^GFA) ────
+const logoCache = new Map<number, { bytes: Uint8Array; w: number; h: number }>()
+export async function logoBits(breedte: number) {
   if (logoCache.has(breedte)) return logoCache.get(breedte)!
   const img = await new Promise<HTMLImageElement>((res, rej) => { const i = new window.Image(); i.onload = () => res(i); i.onerror = rej; i.src = '/logo.png' })
-  const w = Math.floor(breedte / 8) * 8
+  const w = Math.max(8, Math.floor(breedte / 8) * 8)
   const h = Math.round((img.height / img.width) * w)
   const c = document.createElement('canvas'); c.width = w; c.height = h
   const ctx = c.getContext('2d')!
@@ -105,10 +107,14 @@ async function logoRaster(breedte: number) {
     const i = (y * w + x) * 4
     if ((d[i] + d[i + 1] + d[i + 2]) / 3 < 128) bytes[y * (w / 8) + (x >> 3)] |= 0x80 >> (x & 7)
   }
-  let bin = ''; bytes.forEach(b => { bin += String.fromCharCode(b) })
-  const r = { b64: btoa(bin), w, h }
+  const r = { bytes, w, h }
   logoCache.set(breedte, r)
   return r
+}
+async function logoRaster(breedte: number) {
+  const r = await logoBits(breedte)
+  let bin = ''; r.bytes.forEach(b => { bin += String.fromCharCode(b) })
+  return { b64: btoa(bin), w: r.w, h: r.h }
 }
 
 // ─── ePOS-XML ───────────────────────────────────────────────────────────────
@@ -168,6 +174,13 @@ function printViaBrowser(stukken: string[], breedteMm: number, hoogteMm?: number
 
 export async function printBestelling(b: PrintBestelling, cfg: PrinterConfig, ontwerp: Ontwerpen, wat: { ticket?: boolean; stickers?: boolean } = { ticket: true, stickers: true }) {
   const fouten: string[] = []
+  if (wat.ticket && cfg.ticketType === 'ESCPOS_TCP') {
+    if (!cfg.ticketIp) fouten.push('Geen IP-adres voor de ticketprinter ingesteld')
+    else try {
+      const data = await escposBytes(ticketLijnen(b, ontwerp.ticket), { cpl: tekensPerRegel(ontwerp.ticket.papierMm), dots: dots(ontwerp.ticket.papierMm), snijden: true })
+      for (let i = 0; i < Math.max(1, ontwerp.ticket.kopieen); i++) await stuurRuw(cfg.ticketIp, data)
+    } catch (e) { fouten.push(`Ticketprinter: ${(e as Error).message || 'niet bereikbaar'}`) }
+  }
   if (wat.ticket && cfg.ticketType === 'EPSON_EPOS') {
     if (!cfg.ticketIp) fouten.push('Geen IP-adres voor de ticketprinter ingesteld')
     else try {
@@ -178,7 +191,15 @@ export async function printBestelling(b: PrintBestelling, cfg: PrinterConfig, on
   const st = stickers(b)
   if (wat.stickers && st.length) {
     const so = ontwerp.sticker
-    if (cfg.stickerType === 'EPSON_EPOS') {
+    if (cfg.stickerType === 'ZPL_TCP') {
+      if (!cfg.stickerIp) fouten.push('Geen IP-adres voor de stickerprinter ingesteld')
+      else try {
+        // Alle stickers van de bestelling in één opdracht
+        let zpl = ''
+        for (const s of st) zpl += await zplLabel(stickerLijnen(s, so), { breedteMm: so.breedteMm, hoogteMm: so.hoogteMm, rond: so.rond })
+        await stuurRuw(cfg.stickerIp, zpl)
+      } catch (e) { fouten.push(`Stickerprinter: ${(e as Error).message || 'niet bereikbaar'}`) }
+    } else if (cfg.stickerType === 'EPSON_EPOS') {
       if (!cfg.stickerIp) fouten.push('Geen IP-adres voor de stickerprinter ingesteld')
       else for (const s of st) {
         try { await stuurEpos(cfg.stickerIp, await lijnenNaarXml(stickerLijnen(s, so), so.breedteMm, { snijden: false })) }

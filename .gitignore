@@ -24,3 +24,8 @@ android/.gradle/
 ios/App/App/public/
 ios/DerivedData/
 _sleutels-downloaden/
+android-kassa/app/build/
+android-kassa/build/
+android-kassa/.gradle/
+android-kassa/local.properties
+ios-kassa/App/App/public/

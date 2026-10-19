@@ -32,11 +32,17 @@ export type Instellingen = {
   }
   printers: {
     ticketIp: string
-    ticketType: 'EPSON_EPOS' | 'GEEN'
+    // EPSON_EPOS = via Epson ePOS (browser); ESCPOS_TCP / ZPL_TCP = rechtstreeks via de kassa-app (poort 9100)
+    ticketType: 'EPSON_EPOS' | 'ESCPOS_TCP' | 'GEEN'
     stickerIp: string
-    stickerType: 'EPSON_EPOS' | 'BROWSER' | 'GEEN'
+    stickerType: 'EPSON_EPOS' | 'ZPL_TCP' | 'BROWSER' | 'GEEN'
     stickerBreedteMm: number
     autoPrint: boolean
+    // Labelprinter voor opslag-/houdbaarheidsetiketten (rechthoekig)
+    opslagIp: string
+    opslagType: 'ZPL_TCP' | 'GEEN'
+    opslagBreedteMm: number
+    opslagHoogteMm: number
   }
   betalen: {
     onlineActief: boolean
@@ -124,6 +130,10 @@ export const STANDAARD: Instellingen = {
     stickerType: 'EPSON_EPOS',
     stickerBreedteMm: 58,
     autoPrint: true,
+    opslagIp: '',
+    opslagType: 'GEEN',
+    opslagBreedteMm: 50,
+    opslagHoogteMm: 30,
   },
   betalen: {
     onlineActief: false,

@@ -11,7 +11,7 @@ import { nietBeschikbaarReden } from './beschikbaarheid'
 import { aanKassaGeweigerd } from './misbruik'
 import { voorkeur } from './marketing'
 import { mollie } from './mollie'
-import { stuurPushAanKlant } from './push'
+import { stuurPushAanBeheerders, stuurPushAanKlant } from './push'
 
 export type InRegel = { productId: string; aantal: number; keuzes: string[]; aanpassingen: string[] }
 
@@ -148,6 +148,15 @@ async function stuurStatusPush(b: Bestelling) {
   await stuurPushAanKlant(b.klantId, { titel: cfg.titel, tekst: cfg.tekst(b), url: `${SITE}/bestelling/${b.id}` })
 }
 
+// Nieuwe bestelling zichtbaar op de kassa (aan kassa: meteen; online: na betaling) → melding op de kassa-toestellen
+export function meldNieuweBestelling(b: Bestelling) {
+  stuurPushAanBeheerders({
+    titel: `Nieuwe bestelling #${b.nummer}`,
+    tekst: `${b.klantNaam} · afhalen ${formatTijd(b.afhaalTijd)} · ${euro(b.totaalCent)}${b.betaalStatus === 'BETAALD' ? ' (betaald)' : ''}`,
+    url: `${SITE}/kassa`,
+  }).catch(e => console.error('[push] beheerders', e))
+}
+
 export async function stuurStatusMail(b: Bestelling) {
   stuurStatusPush(b).catch(e => console.error('[push] status', e))
   const cfg = STATUS_MAIL[b.status]
@@ -246,7 +255,7 @@ export async function syncBetaling(paymentId: string) {
     // atomair: enkel de eerste keer OPEN → BETAALD (webhook en terugkeer kunnen tegelijk komen)
     const upd = await prisma.bestelling.updateMany({ where: { id: b.id, betaalStatus: { in: ['OPEN', 'MISLUKT'] } }, data: { betaalStatus: 'BETAALD', betaaldOp: new Date(), status: 'ONTVANGEN', statusGewijzigdOp: new Date() } })
     const nieuw = await prisma.bestelling.findUnique({ where: { id: b.id } })
-    if (upd.count === 1 && nieuw) stuurStatusMail(nieuw).catch(() => {})
+    if (upd.count === 1 && nieuw) { stuurStatusMail(nieuw).catch(() => {}); meldNieuweBestelling(nieuw) }
     return nieuw
   }
   if (['failed', 'canceled', 'expired'].includes(p.status)) {

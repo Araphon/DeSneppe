@@ -1,5 +1,5 @@
 import { api, body, fout, ok, vereisKlant } from '@/lib/api'
-import { BestelFout, maakBestelling, startBetaling, stuurStatusMail, type InRegel } from '@/lib/bestelling'
+import { BestelFout, maakBestelling, meldNieuweBestelling, startBetaling, stuurStatusMail, type InRegel } from '@/lib/bestelling'
 import { prisma } from '@/lib/db'
 import { rateLimit } from '@/lib/auth'
 import { clientIp } from '@/lib/misbruik'
@@ -27,6 +27,7 @@ export const POST = api(async req => {
       }
     }
     stuurStatusMail(best).catch(() => {})
+    meldNieuweBestelling(best)
     return ok({ id: best.id })
   } catch (e) {
     if (e instanceof BestelFout) return fout(e.message)

@@ -9,6 +9,7 @@ import UitverkochtModal, { type UitverkochtModus } from './UitverkochtModal'
 import { Switch } from './ui'
 import { vraag } from '../fetcher'
 import type { Ontwerpen, PrinterConfig } from '../print'
+import KassaBrug from '../app/KassaBrug'
 
 type Rij = { id: string; naam: string; afbeelding: string | null; categorie: string; uitverkocht: boolean; zichtbaar: boolean }
 
@@ -79,6 +80,7 @@ export default function KassaApp({ printers, ontwerp }: { printers: PrinterConfi
           </button>
           <Klok /><Link href="/admin" className="text-sm text-white/60 underline">Beheer</Link></div>
       </header>
+      <KassaBrug />
       <main className="p-4 sm:p-5">
         <div className={tab === 'bestellingen' ? '' : 'hidden'}><BestelBord kassa printers={printers} ontwerp={ontwerp} /></div>
         {tab === 'voorraad' && <Voorraad />}

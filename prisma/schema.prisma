@@ -19,6 +19,18 @@ model AdminGebruiker {
   uitnodigTot  DateTime?
   laatsteLogin DateTime?
   aangemaaktOp DateTime  @default(now())
+  toestellen   AdminToestel[]
+}
+
+// Toestel van de kassa-app (pushmeldingen bij nieuwe bestellingen)
+model AdminToestel {
+  id           String         @id @default(cuid())
+  adminId      String
+  admin        AdminGebruiker @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  token        String         @unique
+  platform     String         // ios | android
+  laatstGezien DateTime       @default(now())
+  aangemaaktOp DateTime       @default(now())
 }
 
 model Instelling {

@@ -8,6 +8,10 @@ import { prisma } from './db'
 // iOS: rechtstreeks via Apple Push (APNs, .p8-sleutel) — geen Firebase nodig in de iOS-app.
 
 export type PushBericht = { titel: string; tekst: string; url?: string }
+// Klanten-app (be.desneppe.app) of kassa-app (be.desneppe.kassa): ander APNs-topic en Android-kanaal
+type Doel = { topic: string; kanaal: string }
+const KLANT: Doel = { topic: process.env.APNS_BUNDLE_ID || 'be.desneppe.app', kanaal: 'bestellingen' }
+const KASSA: Doel = { topic: process.env.APNS_KASSA_BUNDLE_ID || 'be.desneppe.kassa', kanaal: 'nieuwe-bestellingen' }
 type Abonnement = { id: string; endpoint: string; data: unknown }
 
 const sleutel = (v?: string) => v?.replace(/\\n/g, '\n')
@@ -40,14 +44,14 @@ async function fcmAccessToken(s: ServiceAccount) {
   return fcmToken.waarde
 }
 
-async function stuurFcm(token: string, b: PushBericht): Promise<'ok' | 'ongeldig' | 'fout'> {
+async function stuurFcm(token: string, b: PushBericht, doel: Doel): Promise<'ok' | 'ongeldig' | 'fout'> {
   const s = serviceAccount()
   if (!s) return 'fout'
   const r = await fetch(`https://fcm.googleapis.com/v1/projects/${s.project_id}/messages:send`, {
     method: 'POST', headers: { Authorization: `Bearer ${await fcmAccessToken(s)}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ message: {
       token, notification: { title: b.titel, body: b.tekst }, data: b.url ? { url: b.url } : {},
-      android: { priority: 'high', notification: { channel_id: 'bestellingen', icon: 'ic_stat_sneppe', color: '#F2B124', sound: 'default' } },
+      android: { priority: 'high', notification: { channel_id: doel.kanaal, icon: 'ic_stat_sneppe', color: '#F2B124', sound: 'default' } },
     } }),
   })
   if (r.ok) return 'ok'
@@ -70,13 +74,13 @@ async function apnsToken() {
   return waarde
 }
 
-function apnsRequest(host: string, token: string, payload: string, jwt: string): Promise<{ status: number; reden?: string }> {
+function apnsRequest(host: string, token: string, payload: string, jwt: string, topic: string): Promise<{ status: number; reden?: string }> {
   return new Promise(resolve => {
     const client = http2.connect(`https://${host}`)
     client.on('error', () => resolve({ status: 0 }))
     const req = client.request({
       ':method': 'POST', ':path': `/3/device/${token}`, authorization: `bearer ${jwt}`,
-      'apns-topic': process.env.APNS_BUNDLE_ID || 'be.desneppe.app', 'apns-push-type': 'alert', 'apns-priority': '10',
+      'apns-topic': topic, 'apns-push-type': 'alert', 'apns-priority': '10',
     })
     let status = 0, data = ''
     req.on('response', h => { status = Number(h[':status']) })
@@ -87,12 +91,12 @@ function apnsRequest(host: string, token: string, payload: string, jwt: string):
   })
 }
 
-async function stuurApns(token: string, b: PushBericht): Promise<'ok' | 'ongeldig' | 'fout'> {
+async function stuurApns(token: string, b: PushBericht, doel: Doel): Promise<'ok' | 'ongeldig' | 'fout'> {
   const payload = JSON.stringify({ aps: { alert: { title: b.titel, body: b.tekst }, sound: 'default' }, url: b.url })
   const jwt = await apnsToken()
-  let r = await apnsRequest('api.push.apple.com', token, payload, jwt)
+  let r = await apnsRequest('api.push.apple.com', token, payload, jwt, doel.topic)
   // Testbuilds uit Xcode gebruiken de sandbox
-  if (r.reden === 'BadDeviceToken') r = await apnsRequest('api.sandbox.push.apple.com', token, payload, jwt)
+  if (r.reden === 'BadDeviceToken') r = await apnsRequest('api.sandbox.push.apple.com', token, payload, jwt, doel.topic)
   if (r.status === 200) return 'ok'
   if (r.status === 410 || r.reden === 'BadDeviceToken' || r.reden === 'Unregistered' || r.reden === 'DeviceTokenNotForTopic') return 'ongeldig'
   console.error('[push] apns', r.status, r.reden)
@@ -108,17 +112,20 @@ export function pushStatus() {
   }
 }
 
-async function stuurNaar(a: Abonnement, b: PushBericht) {
-  const platform = (a.data as { platform?: string } | null)?.platform
+async function stuurEen(platform: string | undefined, token: string, b: PushBericht, doel: Doel): Promise<'ok' | 'ongeldig' | 'fout'> {
   const st = pushStatus()
   try {
-    const r = platform === 'ios' ? (st.ios ? await stuurApns(a.endpoint, b) : 'fout') : (st.android ? await stuurFcm(a.endpoint, b) : 'fout')
-    if (r === 'ongeldig') await prisma.pushAbonnement.delete({ where: { id: a.id } }).catch(() => {})
-    return r === 'ok'
+    return platform === 'ios' ? (st.ios ? await stuurApns(token, b, doel) : 'fout') : (st.android ? await stuurFcm(token, b, doel) : 'fout')
   } catch (e) {
     console.error('[push]', platform, e)
-    return false
+    return 'fout'
   }
+}
+
+async function stuurNaar(a: Abonnement, b: PushBericht) {
+  const r = await stuurEen((a.data as { platform?: string } | null)?.platform, a.endpoint, b, KLANT)
+  if (r === 'ongeldig') await prisma.pushAbonnement.delete({ where: { id: a.id } }).catch(() => {})
+  return r === 'ok'
 }
 
 /** Stuurt een bericht naar alle toestellen van een klant. Geeft het aantal geslaagde toestellen terug. */
@@ -126,5 +133,16 @@ export async function stuurPushAanKlant(klantId: string, b: PushBericht): Promis
   const abos = await prisma.pushAbonnement.findMany({ where: { klantId } })
   if (!abos.length) return 0
   const res = await Promise.all(abos.map(a => stuurNaar(a, b)))
+  return res.filter(Boolean).length
+}
+
+/** Stuurt een bericht naar alle kassa-toestellen van actieve beheerders (bv. nieuwe bestelling). */
+export async function stuurPushAanBeheerders(b: PushBericht): Promise<number> {
+  const toestellen = await prisma.adminToestel.findMany({ where: { admin: { actief: true } } })
+  const res = await Promise.all(toestellen.map(async t => {
+    const r = await stuurEen(t.platform, t.token, b, KASSA)
+    if (r === 'ongeldig') await prisma.adminToestel.delete({ where: { id: t.id } }).catch(() => {})
+    return r === 'ok'
+  }))
   return res.filter(Boolean).length
 }

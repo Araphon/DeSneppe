@@ -113,26 +113,30 @@ export default function InstellingenPagina() {
           <p className="mt-3 rounded-lg bg-sand p-3 text-xs text-ink/70">Altijd actief: verborgen lokveld en tijdscontrole tegen bots bij registratie, geen wegwerp-e-mailadressen, maximaal 10 registraties en 15 bestellingen per uur per internetverbinding.</p>
         </Kaart>
 
-        <Kaart titel="Printers (kassa)" uitleg="Rechtstreeks printen gebeurt vanuit de De Sneppe Kassa-app op de tablet (iPad of Android). Gebruik het IP-adres van elke printer in het winkelnetwerk.">
-          <div className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-[1fr_210px]">
-              <div><label className="label" htmlFor="ti">Ticketprinter – IP-adres</label><input id="ti" className="input font-mono" placeholder="192.168.68.50" value={p.ticketIp} onChange={e => zetP({ ticketIp: e.target.value.trim() })} /></div>
-              <div><label className="label" htmlFor="tt">Type</label><select id="tt" className="input" value={p.ticketType} onChange={e => zetP({ ticketType: e.target.value as typeof p.ticketType })}><option value="ESCPOS_TCP">Epson – via kassa-app</option><option value="EPSON_EPOS">Epson ePOS – via browser</option><option value="GEEN">Geen</option></select></div>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-[1fr_210px]">
-              <div><label className="label" htmlFor="si">Stickerprinter bestellingen (rond) – IP-adres</label><input id="si" className="input font-mono" placeholder="192.168.68.239" value={p.stickerIp} onChange={e => zetP({ stickerIp: e.target.value.trim() })} /></div>
-              <div><label className="label" htmlFor="st">Type</label><select id="st" className="input" value={p.stickerType} onChange={e => zetP({ stickerType: e.target.value as typeof p.stickerType })}><option value="ZPL_TCP">Labelprinter ZPL (Metapace, Zebra…) – via kassa-app</option><option value="EPSON_EPOS">Epson ePOS – via browser</option><option value="BROWSER">AirPrint (dialoog)</option><option value="GEEN">Geen</option></select></div>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-[1fr_210px]">
-              <div><label className="label" htmlFor="oi">Etiketprinter opslag (rechthoekig) – IP-adres</label><input id="oi" className="input font-mono" placeholder="192.168.68.139" value={p.opslagIp} onChange={e => zetP({ opslagIp: e.target.value.trim() })} /></div>
-              <div><label className="label" htmlFor="ot">Type</label><select id="ot" className="input" value={p.opslagType} onChange={e => zetP({ opslagType: e.target.value as typeof p.opslagType })}><option value="ZPL_TCP">Labelprinter ZPL – via kassa-app</option><option value="GEEN">Geen</option></select></div>
-            </div>
-            <div className="grid grid-cols-2 gap-3 sm:max-w-sm">
-              <div><label className="label" htmlFor="ob">Opslagetiket breedte (mm)</label><input id="ob" type="number" min={20} max={110} className="input" value={p.opslagBreedteMm} onChange={e => zetP({ opslagBreedteMm: Number(e.target.value) || 50 })} /></div>
-              <div><label className="label" htmlFor="oh">Hoogte (mm)</label><input id="oh" type="number" min={15} max={200} className="input" value={p.opslagHoogteMm} onChange={e => zetP({ opslagHoogteMm: Number(e.target.value) || 30 })} /></div>
-            </div>
-            <label className="flex items-center justify-between gap-3"><span><span className="block font-medium">Automatisch printen</span><span className="text-sm text-ink/60">Nieuwe bestellingen meteen afdrukken (ticket + stickers) op de kassa</span></span><Switch aan={p.autoPrint} onChange={v => zetP({ autoPrint: v })} /></label>
-            <p className="rounded-xl bg-sand p-3 text-xs text-ink/70">„Via kassa-app”: de tablet stuurt de opdracht rechtstreeks naar de printer (poort 9100). Dat werkt enkel in de De Sneppe Kassa-app, niet in een gewone browser. Tip: een IP-adres met poort mag ook, bv. <span className="font-mono">192.168.68.139:9100</span>.</p>
+        <Kaart titel="Printers (kassa)" uitleg="De Sneppe Kassa-app op de tablet print rechtstreeks naar deze printers in het winkelnetwerk.">
+          <div className="space-y-3">
+            <label className="flex items-center justify-between gap-3 rounded-xl bg-sand p-3"><span><span className="block font-medium">Automatisch printen</span><span className="text-sm text-ink/60">Nieuwe bestellingen meteen afdrukken (ticket + stickers)</span></span><Switch aan={p.autoPrint} onChange={v => zetP({ autoPrint: v })} /></label>
+            {([
+              { k: 'ticket', titel: 'Ticketprinter', doel: 'Bonnetje per bestelling', ip: 'ticketIp', type: 'ticketType', voorbeeld: '192.168.68.50', opties: [['ESCPOS_TCP', 'Epson via kassa-app'], ['EPSON_EPOS', 'Epson ePOS via browser'], ['GEEN', 'Geen']] },
+              { k: 'sticker', titel: 'Stickerprinter (rond)', doel: 'Sticker per broodje', ip: 'stickerIp', type: 'stickerType', voorbeeld: '192.168.68.239', opties: [['ZPL_TCP', 'Labelprinter via kassa-app'], ['EPSON_EPOS', 'Epson ePOS via browser'], ['BROWSER', 'AirPrint (dialoog)'], ['GEEN', 'Geen']] },
+              { k: 'opslag', titel: 'Etiketprinter opslag (rechthoekig)', doel: 'Houdbaarheidsetiketten', ip: 'opslagIp', type: 'opslagType', voorbeeld: '192.168.68.139', opties: [['ZPL_TCP', 'Labelprinter via kassa-app'], ['GEEN', 'Geen']] },
+            ] as const).map(pr => {
+              const uit = p[pr.type] === 'GEEN'
+              return (
+                <div key={pr.k} className="rounded-xl border border-ink/10 p-3">
+                  <div className="mb-2 flex items-baseline justify-between gap-2"><span className="font-medium">{pr.titel}</span><span className="text-xs text-ink/50">{pr.doel}</span></div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div><label className="label" htmlFor={pr.k + 't'}>Type</label><select id={pr.k + 't'} className="input" value={p[pr.type]} onChange={e => zetP({ [pr.type]: e.target.value } as Partial<typeof p>)}>{pr.opties.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
+                    <div><label className="label" htmlFor={pr.k + 'i'}>IP-adres</label><input id={pr.k + 'i'} className="input font-mono disabled:opacity-40" disabled={uit} placeholder={pr.voorbeeld} value={p[pr.ip]} onChange={e => zetP({ [pr.ip]: e.target.value.trim() } as Partial<typeof p>)} /></div>
+                    {pr.k === 'opslag' && !uit && <>
+                      <div><label className="label" htmlFor="ob">Etiket breedte (mm)</label><input id="ob" type="number" min={20} max={110} className="input" value={p.opslagBreedteMm} onChange={e => zetP({ opslagBreedteMm: Number(e.target.value) || 50 })} /></div>
+                      <div><label className="label" htmlFor="oh">Etiket hoogte (mm)</label><input id="oh" type="number" min={15} max={200} className="input" value={p.opslagHoogteMm} onChange={e => zetP({ opslagHoogteMm: Number(e.target.value) || 30 })} /></div>
+                    </>}
+                  </div>
+                </div>
+              )
+            })}
+            <p className="text-xs text-ink/60">„Via kassa-app”: de tablet stuurt de opdracht rechtstreeks naar de printer (poort 9100); dat werkt enkel in de De Sneppe Kassa-app. Een poort meegeven mag ook, bv. <span className="font-mono">192.168.68.139:9100</span>.</p>
           </div>
         </Kaart>
 

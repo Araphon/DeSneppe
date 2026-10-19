@@ -2,7 +2,8 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { isNative } from './app/native'
 import { useWinkelmand } from './winkelmand'
 
 const NAV = [
@@ -16,10 +17,13 @@ export default function Header({ status, open }: { status: string; open: boolean
   const pad = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
   const { aantal } = useWinkelmand()
+  // In de app is het logo een snelkoppeling naar de bestelkant (de website-homepagina bestaat er niet)
+  const [thuis, setThuis] = useState('/')
+  useEffect(() => { if (isNative()) setThuis('/bestellen') }, [])
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-ink text-white" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <div className="container-x flex h-16 items-center gap-4">
-        <Link href="/" className="flex items-center gap-3" aria-label="De Sneppe – home">
+        <Link href={thuis} className="flex items-center gap-3" aria-label="De Sneppe – home">
           <Image src="/logo-wit.png" alt="De Sneppe" width={52} height={52} priority className="h-11 w-auto" />
           <span className="hidden flex-col leading-tight sm:flex [html[data-app]_&]:flex">
             <span className="font-display text-lg font-bold tracking-wide">DE SNEPPE</span>

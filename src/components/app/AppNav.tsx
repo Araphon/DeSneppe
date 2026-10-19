@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react'
 import { useWinkelmand } from '../winkelmand'
 
 const I = {
-  home: <path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z" />,
   bestellen: <><path d="M5 8h14l-1.2 11.1a2 2 0 01-2 1.9H8.2a2 2 0 01-2-1.9z" /><path d="M9 8V6a3 3 0 016 0v2" /></>,
   bestellingen: <><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 8h6M9 12h6M9 16h3" /></>,
   punten: <><rect x="3" y="6" width="18" height="13" rx="2" /><path d="M3 10h18M7 15h4" /></>,
@@ -23,8 +22,7 @@ export default function AppNav() {
     return () => window.removeEventListener('hashchange', zet)
   }, [pad])
   const items = [
-    { href: '/', label: 'Home', icoon: I.home, actief: pad === '/' },
-    { href: '/bestellen', label: 'Bestellen', icoon: I.bestellen, actief: pad.startsWith('/bestellen') || pad.startsWith('/afrekenen') || pad.startsWith('/menu'), badge: aantal },
+    { href: '/bestellen', label: 'Bestellen', icoon: I.bestellen, actief: pad === '/' || pad.startsWith('/bestellen') || pad.startsWith('/afrekenen') || pad.startsWith('/menu'), badge: aantal },
     { href: '/account#bestellingen', label: 'Bestellingen', icoon: I.bestellingen, actief: pad.startsWith('/bestelling') || (pad === '/account' && (hash === '' || hash === 'bestellingen')) },
     { href: '/account#punten', label: 'Spaarkaart', icoon: I.punten, actief: pad === '/account' && hash === 'punten' },
     { href: '/account#gegevens', label: 'Account', icoon: I.account, actief: pad.startsWith('/account') && ['gegevens', 'meldingen'].includes(hash) },

@@ -24,7 +24,8 @@ const HERLAAD = `(function(){function h(){try{var k='sn_herlaad',t=+sessionStora
 export const viewport: Viewport = { themeColor: '#141414', width: 'device-width', initialScale: 1, viewportFit: 'cover' }
 
 // In de app (Capacitor, eigen user-agent) meteen de app-weergave tonen, vóór de eerste weergave
-const APP = `try{if(/DeSneppeApp/.test(navigator.userAgent))document.documentElement.dataset.app='1'}catch(e){}`
+// en de homepagina (website) overslaan: de app start op het aanmeld-/bestelscherm
+const APP = `try{if(/DeSneppeApp/.test(navigator.userAgent)){document.documentElement.dataset.app='1';if(location.pathname==='/')location.replace('/app')}}catch(e){}`
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

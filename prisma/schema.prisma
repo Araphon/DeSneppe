@@ -15,6 +15,7 @@ model AdminGebruiker {
   naam         String
   wachtwoord   String?
   actief       Boolean   @default(true)
+  demo         Boolean   @default(false) // reviewer-account (App Store): enkel nep-bestellingen, alleen-lezen
   uitnodigToken String?  @unique
   uitnodigTot  DateTime?
   laatsteLogin DateTime?

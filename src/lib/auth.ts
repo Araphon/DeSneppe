@@ -9,8 +9,8 @@ export const KLANT_COOKIE = 'sn_klant'
 
 type Rol = 'admin' | 'klant'
 
-export async function maakToken(sub: string, rol: Rol, dagen = 60) {
-  return new SignJWT({ rol })
+export async function maakToken(sub: string, rol: Rol, dagen = 60, extra: { demo?: boolean } = {}) {
+  return new SignJWT({ rol, ...(extra.demo ? { demo: true } : {}) })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(sub)
     .setIssuedAt()

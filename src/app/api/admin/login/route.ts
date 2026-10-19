@@ -12,6 +12,6 @@ export const POST = api(async req => {
   if (!a || !a.actief || !a.wachtwoord || !(await bcrypt.compare(String(wachtwoord || ''), a.wachtwoord))) return fout('E-mailadres of wachtwoord klopt niet.', 401)
   await prisma.adminGebruiker.update({ where: { id: a.id }, data: { laatsteLogin: new Date() } })
   const res = NextResponse.json({ ok: true })
-  res.cookies.set(ADMIN_COOKIE, await maakToken(a.id, 'admin', 90), cookieOpties(90))
+  res.cookies.set(ADMIN_COOKIE, await maakToken(a.id, 'admin', 90, { demo: a.demo }), cookieOpties(90))
   return res
 })

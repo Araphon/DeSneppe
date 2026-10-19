@@ -30,7 +30,11 @@ export default function AppNav() {
   return (
     <nav className="alleen-app fixed inset-x-0 bottom-0 z-40 border-t border-ink/10 bg-white/95 backdrop-blur" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }} aria-label="App-menu">
       {items.map(i => (
-        <Link key={i.label} href={i.href} className={`relative flex h-16 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold ${i.actief ? 'text-ink' : 'text-ink/45'}`}>
+        <Link key={i.label} href={i.href} onClick={e => {
+          // Zelfde pagina, ander tabblad (#punten, #gegevens…): de router wijzigt de hash zonder 'hashchange' → zelf zetten
+          const [pagina, hash] = i.href.split('#')
+          if (hash && pad === pagina) { e.preventDefault(); if (location.hash !== '#' + hash) location.hash = hash; window.scrollTo(0, 0) }
+        }} className={`relative flex h-16 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold ${i.actief ? 'text-ink' : 'text-ink/45'}`}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={i.actief ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>{i.icoon}</svg>
           {i.label}
           {i.actief && <span className="absolute top-0 h-0.5 w-8 rounded-full bg-brand" />}

@@ -10,4 +10,4 @@ rsync -a --delete -e "$SSH" \
   --exclude .php-ini --exclude .php-version --exclude tsconfig.tsbuildinfo \
   --exclude 'android*/app/build' --exclude .gradle --exclude 'ios*/App/build' \
   ./ "$DOEL:de-sneppe.be/"
-$SSH "$DOEL" 'export PATH=/opt/plesk/node/25/bin:$PATH; cd de-sneppe.be && (cmp -s package-lock.json node_modules/.package-lock.json || npm ci --no-audit --no-fund) && npx prisma generate >/dev/null && ./deploy.sh'
+$SSH "$DOEL" 'export PATH=/opt/plesk/node/25/bin:$PATH; cd de-sneppe.be && H=$(sha1sum package-lock.json | cut -c1-40); [ "$H" = "$(cat node_modules/.lock-hash 2>/dev/null)" ] || { npm ci --no-audit --no-fund && echo $H > node_modules/.lock-hash; } && npx prisma generate >/dev/null && ./deploy.sh'

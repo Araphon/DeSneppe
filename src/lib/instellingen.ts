@@ -30,6 +30,11 @@ export type Instellingen = {
     maxOpenAanKassa: number // max. openstaande bestellingen 'betalen bij afhalen' per klant
     maxEersteBestellingCent: number // nieuwe klant: max. bedrag bij betalen aan de kassa (0 = onbeperkt)
   }
+  // Overgangsfase: knoppen 'Bestel online' tijdelijk naar een andere bestelpagina sturen (niet in de app)
+  doorsturen: {
+    actief: boolean
+    url: string
+  }
   // E-mail: de SMTP-login staat op de server (.env); hier enkel wat Luna zelf kiest
   mail: {
     afzenderNaam: string // naam die de klant ziet als afzender
@@ -127,6 +132,10 @@ export const STANDAARD: Instellingen = {
     noShowLimiet: 2,
     maxOpenAanKassa: 3,
     maxEersteBestellingCent: 4000,
+  },
+  doorsturen: {
+    actief: false,
+    url: '',
   },
   mail: {
     afzenderNaam: 'De Sneppe',

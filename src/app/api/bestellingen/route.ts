@@ -5,6 +5,7 @@ import { rateLimit } from '@/lib/auth'
 import { clientIp } from '@/lib/misbruik'
 import { getInstellingen } from '@/lib/instellingen'
 import { isApp } from '@/lib/app'
+import { doorstuurUrl } from '@/lib/doorsturen'
 
 export const POST = api(async req => {
   const klant = await vereisKlant()
@@ -13,6 +14,8 @@ export const POST = api(async req => {
   if (!rateLimit('best:' + clientIp(req), 15, 60 * 60000) || !rateLimit('bestk:' + klant.id, 8, 60 * 60000)) return fout('Te veel bestellingen op korte tijd. Bel ons gerust als je meer wil bestellen.', 429)
   const inst = await getInstellingen()
   if (!inst.bestellen.actief) return fout('Online bestellen is momenteel niet mogelijk.')
+  const naar = await doorstuurUrl(req.headers.get('user-agent'))
+  if (naar) return fout(`Online bestellen gebeurt tijdelijk via ${naar}`)
   const b = await body<{ regels?: InRegel[]; afhaalTijd?: string; opmerking?: string; betaalwijze?: string }>(req)
   const betaalwijze = b.betaalwijze === 'ONLINE' ? 'ONLINE' : 'AAN_KASSA'
   try {

@@ -140,6 +140,8 @@ export default function InstellingenPagina() {
           </div>
         </Kaart>
 
+        <MailKaart m={i.mail} zet={x => setI({ ...i, mail: { ...i.mail, ...x } })} bedrijfsMail={z.email} />
+
         <Kaart titel="Bedrijfsgegevens" uitleg="Gebruikt op de website, in e-mails en voor Google (structured data).">
           <div className="grid gap-3 sm:grid-cols-2">
             {([['naam', 'Naam'], ['handelsnaam', 'Handelsnaam'], ['adres', 'Straat + nr'], ['postcode', 'Postcode'], ['gemeente', 'Gemeente'], ['telefoon', 'Telefoon'], ['email', 'E-mail'], ['btwNummer', 'Btw-nummer'], ['facebook', 'Facebook-URL'], ['instagram', 'Instagram-URL'], ['googlePlaceId', 'Google reviewlink of Place-ID']] as const).map(([k, l]) => (
@@ -156,5 +158,40 @@ export default function InstellingenPagina() {
       </div>
       <Melding m={melding.m} />
     </div>
+  )
+}
+
+type MailStatus = { actief: boolean; server: string | null; adres: string | null }
+function MailKaart({ m, zet, bedrijfsMail }: { m: Instellingen['mail']; zet: (x: Partial<Instellingen['mail']>) => void; bedrijfsMail: string }) {
+  const [st, setSt] = useState<MailStatus | null>(null)
+  const [aan, setAan] = useState('')
+  const [bezig, setBezig] = useState(false)
+  const [res, setRes] = useState<{ ok: boolean; t: string } | null>(null)
+  useEffect(() => { vraag<MailStatus>('/api/admin/mail').then(setSt).catch(() => {}) }, [])
+  const test = async () => {
+    setBezig(true); setRes(null)
+    try { const r = await vraag<{ aan: string }>('/api/admin/mail', 'POST', { aan }); setRes({ ok: true, t: `Testmail verstuurd naar ${r.aan}. Kijk ook even in je spammap.` }) }
+    catch (e) { setRes({ ok: false, t: (e as Error).message }) } finally { setBezig(false) }
+  }
+  return (
+    <Kaart titel="E-mail" uitleg="Bevestigingen, wachtwoord-herstel en nieuwsbrieven naar klanten.">
+      <div className="space-y-3">
+        <div className={`rounded-xl p-3 text-sm ${st?.actief ? 'bg-emerald-50 text-emerald-900' : 'bg-amber-50 text-amber-900'}`}>
+          {!st ? 'Status laden…' : st.actief
+            ? <>Mails vertrekken van <span className="font-mono">{st.adres}</span> via <span className="font-mono">{st.server}</span>.</>
+            : 'Er is nog geen mailserver ingesteld: er worden geen e-mails verstuurd.'}
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div><label className="label" htmlFor="man">Naam afzender</label><input id="man" className="input" value={m.afzenderNaam} onChange={e => zet({ afzenderNaam: e.target.value })} /></div>
+          <div><label className="label" htmlFor="maa">Antwoorden gaan naar</label><input id="maa" type="email" className="input" placeholder={bedrijfsMail} value={m.antwoordAdres} onChange={e => zet({ antwoordAdres: e.target.value.trim() })} /></div>
+        </div>
+        <p className="text-xs text-ink/60">Klanten zien de naam van de afzender. Klikken ze op „beantwoorden”, dan komt hun mail op het antwoordadres terecht (leeg = het e-mailadres bij Bedrijfsgegevens).</p>
+        <div className="flex flex-wrap items-end gap-2 border-t border-ink/5 pt-3">
+          <div className="min-w-[200px] flex-1"><label className="label" htmlFor="mt">Testmail naar</label><input id="mt" type="email" className="input" placeholder="jouw e-mailadres" value={aan} onChange={e => setAan(e.target.value)} /></div>
+          <button type="button" className="btn-ghost" disabled={bezig || !st?.actief} onClick={test}>{bezig ? 'Versturen…' : 'Testmail sturen'}</button>
+        </div>
+        {res && <p className={`text-sm ${res.ok ? 'text-emerald-700' : 'text-red-700'}`}>{res.t}</p>}
+      </div>
+    </Kaart>
   )
 }

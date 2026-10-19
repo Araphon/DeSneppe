@@ -30,6 +30,11 @@ export type Instellingen = {
     maxOpenAanKassa: number // max. openstaande bestellingen 'betalen bij afhalen' per klant
     maxEersteBestellingCent: number // nieuwe klant: max. bedrag bij betalen aan de kassa (0 = onbeperkt)
   }
+  // E-mail: de SMTP-login staat op de server (.env); hier enkel wat Luna zelf kiest
+  mail: {
+    afzenderNaam: string // naam die de klant ziet als afzender
+    antwoordAdres: string // waar antwoorden van klanten terechtkomen (leeg = bedrijfs-e-mail)
+  }
   printers: {
     ticketIp: string
     // EPSON_EPOS = via Epson ePOS (browser); ESCPOS_TCP / ZPL_TCP = rechtstreeks via de kassa-app (poort 9100)
@@ -122,6 +127,10 @@ export const STANDAARD: Instellingen = {
     noShowLimiet: 2,
     maxOpenAanKassa: 3,
     maxEersteBestellingCent: 4000,
+  },
+  mail: {
+    afzenderNaam: 'De Sneppe',
+    antwoordAdres: '',
   },
   printers: {
     ticketIp: '',

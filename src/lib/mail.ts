@@ -15,6 +15,36 @@ function getTransport() {
   return transport
 }
 
+/** Status voor de admin (zonder wachtwoord). */
+export function mailStatus() {
+  return {
+    actief: Boolean(process.env.SMTP_HOST),
+    server: process.env.SMTP_HOST || null,
+    adres: process.env.SMTP_FROM_ADRES || process.env.SMTP_USER || null,
+  }
+}
+
+/** Afzender + antwoordadres volgens de instellingen. */
+async function afzender() {
+  const inst = await getInstellingen()
+  const adres = process.env.SMTP_FROM_ADRES || process.env.SMTP_USER || inst.bedrijf.email
+  const naam = (inst.mail.afzenderNaam || inst.bedrijf.naam).replace(/"/g, '')
+  return { from: `"${naam}" <${adres}>`, replyTo: inst.mail.antwoordAdres || inst.bedrijf.email }
+}
+
+/** Stuurt een testmail en geeft de foutmelding van de server terug als het misloopt. */
+export async function stuurTestMail(aan: string): Promise<{ ok: boolean; fout?: string }> {
+  const t = getTransport()
+  if (!t) return { ok: false, fout: 'Er is nog geen mailserver ingesteld op de server.' }
+  try {
+    await t.verify()
+  } catch (e) {
+    return { ok: false, fout: `Aanmelden bij de mailserver mislukt: ${(e as { response?: string }).response || (e as Error).message}` }
+  }
+  const ok = await stuurMail(aan, 'Testmail van De Sneppe', 'Het werkt!', ['Dit is een testmail vanuit de beheeromgeving van De Sneppe. Komt deze aan in je inbox (en niet in spam), dan is de mail goed ingesteld.'])
+  return ok ? { ok: true } : { ok: false, fout: 'Versturen mislukt; zie de serverlogs.' }
+}
+
 function esc(s: string) {
   return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!))
 }
@@ -42,8 +72,7 @@ export async function stuurMail(aan: string, onderwerp: string, titel: string, a
   }
   try {
     await t.sendMail({
-      from: process.env.SMTP_FROM || `"${inst.bedrijf.naam}" <${inst.bedrijf.email}>`,
-      replyTo: inst.bedrijf.email,
+      ...(await afzender()),
       to: aan,
       subject: onderwerp,
       html,

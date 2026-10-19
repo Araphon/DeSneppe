@@ -4,7 +4,7 @@ import { datumPlus, dagNaam, lokaleDelen, tijdVanMinuten, vandaagLokaal, formatD
 import type { MenuCategorie } from './catalogus'
 import { euro } from './geld'
 
-export const SITE = process.env.SITE_URL || 'https://sneppe.beehive.be'
+export const SITE = process.env.SITE_URL || 'https://de-sneppe.be'
 
 export function intervalTekst(iv: Interval[]) {
   return iv.length ? iv.map(([a, b]) => `${tijdVanMinuten(a)}–${tijdVanMinuten(b)}`).join(' & ') : 'gesloten'

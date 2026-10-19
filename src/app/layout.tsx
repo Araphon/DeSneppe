@@ -5,7 +5,7 @@ import './globals.css'
 const display = Josefin_Sans({ subsets: ['latin'], weight: ['600', '700'], variable: '--font-display', display: 'swap' })
 const body = DM_Sans({ subsets: ['latin'], variable: '--font-body', display: 'swap' })
 
-const SITE = process.env.SITE_URL || 'https://sneppe.beehive.be'
+const SITE = process.env.SITE_URL || 'https://de-sneppe.be'
 const noindex = process.env.NOINDEX === '1'
 
 export const metadata: Metadata = {

@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli'
 
-// De app laadt de live website (sneppe.beehive.be, later de-sneppe.be): inhoud en functies
+// De app laadt de live website (de-sneppe.be): inhoud en functies
 // updaten zonder nieuwe app-versie. Enkel native wijzigingen (plugins, iconen) vragen een nieuwe build.
-const url = process.env.SNEPPE_APP_URL || 'https://sneppe.beehive.be'
+const url = process.env.SNEPPE_APP_URL || 'https://de-sneppe.be'
 
 const config: CapacitorConfig = {
   appId: 'be.desneppe.app',

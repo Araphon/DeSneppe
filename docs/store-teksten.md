@@ -5,9 +5,9 @@
 - Ondertitel (App Store, max. 30): **Broodjesbar in Meulebeke**
 - Korte beschrijving (Play, max. 80): **Bestel je broodje online bij De Sneppe en haal het af zonder wachten.**
 - Categorie: Eten en drinken (Food & Drink)
-- Support-URL: https://sneppe.beehive.be/contact
-- Marketing-URL: https://sneppe.beehive.be
-- Privacybeleid: https://sneppe.beehive.be/privacy
+- Support-URL: https://de-sneppe.be/contact
+- Marketing-URL: https://de-sneppe.be
+- Privacybeleid: https://de-sneppe.be/privacy
 - Contact: info@de-sneppe.be · 051 43 69 57 · Bruggesteenweg 83, 8760 Meulebeke
 - Copyright: 2026 De Sneppe
 - Trefwoorden (App Store, max. 100): broodjes,broodjesbar,lunch,bestellen,afhalen,meulebeke,panini,wrap,soep,dagschotel,sandwich

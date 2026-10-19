@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
 
 // De Sneppe Kassa — app voor de winkelier (bestelbord, automatisch printen, meldingen bij nieuwe bestellingen).
 // Bouwen: kopieer dit bestand over capacitor.config.ts (gebeurt automatisch in Codemagic).
-const url = process.env.SNEPPE_APP_URL || 'https://sneppe.beehive.be'
+const url = process.env.SNEPPE_APP_URL || 'https://de-sneppe.be'
 
 const config: CapacitorConfig = {
   appId: 'be.desneppe.kassa',

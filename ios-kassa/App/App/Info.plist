@@ -66,6 +66,8 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>De camera wordt gebruikt om de QR-code van een klantvoucher te scannen.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>De Sneppe Kassa print tickets en stickers op de printers in het winkelnetwerk.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>

@@ -22,6 +22,7 @@ fi
 
 echo "→ Overzetten naar live …"
 # Eerst statische bestanden (oude chunks blijven bestaan), daarna de servercode
+mkdir -p "$LIVE/.next/static"
 rsync -a "$BUILD/.next/static/" "$LIVE/.next/static/"
 rsync -a --delete --exclude static --exclude cache "$BUILD/.next/" "$LIVE/.next/"
 mkdir -p "$LIVE/tmp" && touch "$LIVE/tmp/restart.txt"
